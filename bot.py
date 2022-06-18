@@ -2,18 +2,20 @@
 1. /TODO 'TRIGGER' WHEN FIRST CHANGE 1.0 TO 0.0 AND 0.0 TO 0.1 SO ONLY 1 RESULT() RUNS
 2. / TODO STOP THE WHOLE OPERATION OF LOOPING() WHEN RESULT() IS RUNNING FOR A WHILE
 3.  TODO (INTERRUPTION) add STOP() function that interrupts LOOPING() and stop the process
+- CURRENTLY INTERRUPT BREAKS THE WHOLE DISCORD CONNECTION
+- SOMETHING IS WRONG AT THE CORE OF THIS CODE, MAYBE RESTRUCTURE TO TASK?
 """
 # bot.py
+import eyetrack as eye
 import os
 
 import discord
 from dotenv import load_dotenv
-from discord.ext import commands
+from discord.ext import commands, tasks
 import asyncio
 
 from pylsl import StreamInlet, resolve_stream
 """ custom opencv eyetracking libraries"""
-import eyetrack4 as eye
 
 """ main functions """
 load_dotenv()
@@ -39,10 +41,13 @@ async def on_message(message):
 
     if message.content == 'bot you seeing this?':
         await message.channel.send('what where')
+
     await bot.process_commands(message)
 
 
 foo = 0
+
+
 @bot.command()
 async def increase(ctx):
     global foo
@@ -58,7 +63,8 @@ async def test(ctx, arg1, arg2):
 camis = 0
 anotherfoo = 'Built-in cam'
 """ used to triger focused state so result doesnt keep running when looping detects multiple 1s in a row"""
-trigger = 0 
+trigger = 0
+supposedletter = ""
 
 @bot.command()
 async def changecam(ctx, arg1: int):
@@ -84,31 +90,45 @@ async def changecam(ctx, arg1: int):
 
 
 def result():
-    global camis
+    global camis, supposedletter
     bar = eye.returnvalue(camis)
+    supposedletter += bar
+    print(f"{supposedletter} {bar}" )
     """only prints on 1 channel currently"""
-    task = bot.loop.create_task(bot.get_channel(986162355698294834).send(bar))
-    
+    bot.loop.create_task(bot.get_channel(986162355698294834).send(supposedletter))
+
 
 @bot.command()
-async def looping(ctx):
+async def loopem(ctx):
     global trigger
-    task = bot.loop.create_task(bot.get_channel(986162355698294834).send("Running loop"))
+    """print to channel saying: Running loop"""
+    task = bot.loop.create_task(bot.get_channel(
+        986162355698294834).send("Running loop"))
     await asyncio.sleep(1)
     task.cancel()
+
+    """ Connect to OPENBCI's LSL network to get focused state"""
     streams = resolve_stream('type', 'EEG')
     inlet = StreamInlet(streams[0])
-    while True:
-    # get a new sample (you can also omit the timestamp part if you're not
-    # interested in it)
-        sample, timestamp = inlet.pull_sample()
-        # print (f'{sample} and type is {type(sample)}')
-        if sample[0] == 1.0:
-            if trigger == 0:
-                trigger = 1
-                result()
-                await asyncio.sleep(1)
-        else: 
-            trigger = 0
+    try:
+        while True:
+            # get a new sample (you can also omit the timestamp part if you're not
+            # interested in it)
+            
+                sample, timestamp = inlet.pull_sample()
+                # print (f'{sample} and type is {type(sample)}')
+                if sample[0] == 1.0:
+                    if trigger == 0:
+                        trigger = 1
+                        result()
+                        await asyncio.sleep(1)
+                        """TODO HERE IS WHERE I CAN TAKE OUT THE LSL CONNECTION AND TAKE OUT THE LOOP"""
+
+                else:
+                    trigger = 0
+    except KeyboardInterrupt:
+        inlet.__del__
+        
+            
 
 bot.run(TOKEN)
