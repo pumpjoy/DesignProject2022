@@ -1,7 +1,7 @@
 """
-1. TODO 'TRIGGER' WHEN FIRST CHANGE 1.0 TO 0.0 AND 0.0 TO 0.1 SO ONLY 1 RESULT() RUNS
-2. / TODO SEND BAR INTO DISCORD WITHOUT COROUTINE...
-3. TODO (INTERRUPTION) add STOP() function that interrupts LOOPING() and stop the process
+1. /TODO 'TRIGGER' WHEN FIRST CHANGE 1.0 TO 0.0 AND 0.0 TO 0.1 SO ONLY 1 RESULT() RUNS
+2. / TODO STOP THE WHOLE OPERATION OF LOOPING() WHEN RESULT() IS RUNNING FOR A WHILE
+3.  TODO (INTERRUPTION) add STOP() function that interrupts LOOPING() and stop the process
 """
 # bot.py
 import os
@@ -57,6 +57,8 @@ async def test(ctx, arg1, arg2):
 """the real deal is here"""
 camis = 0
 anotherfoo = 'Built-in cam'
+""" used to triger focused state so result doesnt keep running when looping detects multiple 1s in a row"""
+trigger = 0 
 
 @bot.command()
 async def changecam(ctx, arg1: int):
@@ -84,11 +86,16 @@ async def changecam(ctx, arg1: int):
 def result():
     global camis
     bar = eye.returnvalue(camis)
-    bot.loop.create_task(bot.get_channel(986162355698294834).send(bar))
-    # ctx.send(bar)
+    """only prints on 1 channel currently"""
+    task = bot.loop.create_task(bot.get_channel(986162355698294834).send(bar))
+    
 
 @bot.command()
 async def looping(ctx):
+    global trigger
+    task = bot.loop.create_task(bot.get_channel(986162355698294834).send("Running loop"))
+    await asyncio.sleep(1)
+    task.cancel()
     streams = resolve_stream('type', 'EEG')
     inlet = StreamInlet(streams[0])
     while True:
@@ -97,8 +104,11 @@ async def looping(ctx):
         sample, timestamp = inlet.pull_sample()
         # print (f'{sample} and type is {type(sample)}')
         if sample[0] == 1.0:
-            print(f"SAMPLE IS {sample}")
-            result()
-            await asyncio.sleep(5)
+            if trigger == 0:
+                trigger = 1
+                result()
+                await asyncio.sleep(1)
+        else: 
+            trigger = 0
 
 bot.run(TOKEN)
