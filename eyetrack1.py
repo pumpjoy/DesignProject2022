@@ -5,15 +5,20 @@
 # instead of pupil, iris will be detected instead
 # in iteration 1, only a square contour will be drawned along with the x,y axis indicating middle of contour
 
+# btw x is width, y is height
+
 """
-This iteration has midpoint
+This iteration has 4 bounding box 
 """
 
 """Import necessary libraries"""
 import cv2
 import numpy as np
+import time
 
-""" intersection  between 2 lines """
+""" (A) intersection  between 2 lines, returns a tuple """
+
+
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -36,10 +41,40 @@ def intersectf(A, B, C, D):
 
 
 """videoCapture(1) indicates usage of webcam, 0 for laptop built-in, or video file name"""
-# cap = cv2.VideoCapture("testeye.flv")
 """CAP_DSHOW is DirectShow, removes the delay of opening cam"""
-cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+# cap = cv2.VideoCapture("testeye.flv")
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+capheight = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+capwidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+
+""" 
+get bounding box of video
+currently only 50% of width and height as 4 boxes of reference
+50% height, height, 50% width, width
+"""
+
+
+"""TODO FIND A BETTER PRACTICE/METHOD"""
+""" (B) Get category """
+def Category(ratiois):
+    print(f"ratiois is {ratiois}")
+    """better practice if getting midpoint from a lot of conditions?"""
+    if ratiois[0] < 50 and ratiois[1] < 50:
+        return 'A'
+    elif ratiois[0] < 50 and ratiois[1] <= 100:
+        return 'C'
+    elif ratiois[0] <= 100 and ratiois[1] < 50:
+        return 'B'
+    elif ratiois[0] <= 100 and ratiois[1] <= 100:
+        return 'D'
+
+
+
+
+""" main loop """
 while True:
+    print(f"height is {capheight} and width is {capwidth}")
     ret, frame = cap.read()
 
     roi = frame
@@ -70,6 +105,7 @@ while True:
         (x, y, w, h) = cv2.boundingRect(cnt)
         cv2.rectangle(roi, (x, y), (x+w, y+h), (0, 0, 255), 2)
 
+        """ (A) to get midpoint as pseudo pupil """
         A = Point(x+int(w/2), 0)
         B = Point(x+int(w/2), rows)
         C = Point(0, y+int(h/2))
@@ -77,17 +113,31 @@ while True:
         midpt = intersectf(A, B, C, D)
         print(midpt)
 
+        """ (B) to differentiate which box midpoint is looking at """
+        ratiois = (int((midpt[0] / capwidth) * 100), int((midpt[1] / capheight) * 100))
+        print(Category(ratiois))
+
+        """ to draw the middle point for visualization """
         cv2.line(roi, (x+int(w/2), 0), (x+int(w/2), rows),
                  (0, 255, 0), 2)  # y-axis
         cv2.line(roi, (0, y+int(h/2)), (cols, y+int(h/2)),
                  (0, 255, 0), 2)  # x-axis
+    
+        """sleep for 1 seconds for my own sanity, also accepts float"""
+        # time.sleep(1) 
         break
 
-    cv2.imshow("threshold", thresh)
     cv2.imshow("roi", roi)
     key = cv2.waitKey(30)
+    """escape to exit loop/close image show box"""
     if key == 27:
         break
 
 
 cv2.destroyAllWindows()
+
+""" 
+things to consider regarding best practices
+- https://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
+- https://stackoverflow.com/questions/36757965/how-to-have-multiple-conditions-for-one-if-statement-in-python
+"""
