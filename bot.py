@@ -1,11 +1,17 @@
+"""
+1. TODO 'TRIGGER' WHEN FIRST CHANGE 1.0 TO 0.0 AND 0.0 TO 0.1 SO ONLY 1 RESULT() RUNS
+2. / TODO SEND BAR INTO DISCORD WITHOUT COROUTINE...
+3. TODO (INTERRUPTION) add STOP() function that interrupts LOOPING() and stop the process
+"""
 # bot.py
 import os
 
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
+import asyncio
 
-
+from pylsl import StreamInlet, resolve_stream
 """ custom opencv eyetracking libraries"""
 import eyetrack4 as eye
 
@@ -15,9 +21,11 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix='$')
 
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
+
 
 @bot.event
 async def on_message(message):
@@ -33,13 +41,14 @@ async def on_message(message):
         await message.channel.send('what where')
     await bot.process_commands(message)
 
-    
+
 foo = 0
 @bot.command()
 async def increase(ctx):
     global foo
     await ctx.send(foo)
     foo += 1
+
 
 @bot.command()
 async def test(ctx, arg1, arg2):
@@ -48,10 +57,11 @@ async def test(ctx, arg1, arg2):
 """the real deal is here"""
 camis = 0
 anotherfoo = 'Built-in cam'
+
 @bot.command()
 async def changecam(ctx, arg1: int):
     global camis
-    global anotherfoo 
+    global anotherfoo
 
     if arg1 == camis:
         await ctx.send(f'Configuration is already {camis} which is {anotherfoo}')
@@ -65,15 +75,30 @@ async def changecam(ctx, arg1: int):
         if camis == 0:
             anotherfoo = 'Built-in cam'
         elif camis == 1:
-            anotherfoo = 'External cam 1' 
+            anotherfoo = 'External cam 1'
 
         await ctx.send(f'Done. Cam is set to {camis}, {anotherfoo}')
         await ctx.send("You seeing this?")
 
-@bot.command()
-async def result(ctx):
+
+def result():
     global camis
     bar = eye.returnvalue(camis)
-    await ctx.send(bar)
+    bot.loop.create_task(bot.get_channel(986162355698294834).send(bar))
+    # ctx.send(bar)
+
+@bot.command()
+async def looping(ctx):
+    streams = resolve_stream('type', 'EEG')
+    inlet = StreamInlet(streams[0])
+    while True:
+    # get a new sample (you can also omit the timestamp part if you're not
+    # interested in it)
+        sample, timestamp = inlet.pull_sample()
+        # print (f'{sample} and type is {type(sample)}')
+        if sample[0] == 1.0:
+            print(f"SAMPLE IS {sample}")
+            result()
+            await asyncio.sleep(5)
 
 bot.run(TOKEN)
