@@ -67,10 +67,10 @@ def Category(ratiois):
 
 
 """ main loop """
-def returnvalue():
+def returnvalue(camis):
     """videoCapture(1) indicates usage of webcam, 0 for laptop built-in, or video file name"""
     """CAP_DSHOW is DirectShow, removes the delay of opening cam"""
-    cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture(camis, cv2.CAP_DSHOW)
     capheight = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     capwidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 
@@ -91,7 +91,12 @@ def returnvalue():
     reduce to find get darkest area 
     more info read https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html
     """
-    _, thresh = cv2.threshold(gray_roi, 10, 255, cv2.THRESH_BINARY_INV)
+    
+    if camis == 0:
+        camisthresh = 80
+    if camis == 1:
+        camisthresh = 20
+    _, thresh = cv2.threshold(gray_roi, camisthresh, 255, cv2.THRESH_BINARY_INV)
     contours, _ = cv2.findContours(
         thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     """sorted is to remove noise/ get contour with the highest weight (the iris)"""
