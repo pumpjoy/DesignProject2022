@@ -21,18 +21,17 @@ async def on_message(message):
 
     if message.author == bot.user:
         return
-
     if message.content == 'hey bot':
         await message.channel.send('what u want')
 
     if message.content == 'bot you seeing this?':
         await message.channel.send('what where')
-    
     await bot.process_commands(message)
 
+    
 foo = 0
 @bot.command()
-async def answeris(ctx):
+async def increase(ctx):
     global foo
     await ctx.send(foo)
     foo += 1
@@ -42,6 +41,8 @@ async def answeris(ctx):
 async def test(ctx, arg1, arg2):
     await ctx.send('You passed {} and {}'.format(arg1, arg2))
 
-# bot.add_command(answeris)
-# bot.add_command(test)
+@bot.command()
+async def result(ctx):
+    await ctx.send('Result here')
+
 bot.run(TOKEN)
