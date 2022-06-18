@@ -5,6 +5,9 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 
+import eyetrack as eye
+bar = ''
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -43,6 +46,8 @@ async def test(ctx, arg1, arg2):
 
 @bot.command()
 async def result(ctx):
-    await ctx.send('Result here')
+    global bar
+    bar = eye.returnvalue()
+    await ctx.send(bar)
 
 bot.run(TOKEN)
