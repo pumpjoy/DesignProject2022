@@ -27,13 +27,18 @@ bot = commands.Bot(command_prefix='$')
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
+    channel = bot.get_channel(986162355698294834)
+    await channel.send('hello')
+
+# @bot.event
+# async def on_disconnect():
+#     print(f'{bot.user.name} has disconnected from Discord!')
+#     channel = bot.get_channel(986162355698294834)
+#     await channel.send('byebyee~~')
 
 
 @bot.event
 async def on_message(message):
-    # channel = client.get_channel(986162355698294834)
-    # await channel.send('hello')
-
     if message.author == bot.user:
         return
     if message.content == 'hey bot':
@@ -41,13 +46,14 @@ async def on_message(message):
 
     if message.content == 'bot you seeing this?':
         await message.channel.send('what where')
+    
+    if message.content == 'hug me':
+        await message.channel.send('i\'m scared...')
 
     await bot.process_commands(message)
 
 
 foo = 0
-
-
 @bot.command()
 async def increase(ctx):
     global foo
@@ -86,7 +92,6 @@ async def changecam(ctx, arg1: int):
             anotherfoo = 'External cam 1'
 
         await ctx.send(f'Done. Cam is set to {camis}, {anotherfoo}')
-        await ctx.send("You seeing this?")
 
 
 def result():
